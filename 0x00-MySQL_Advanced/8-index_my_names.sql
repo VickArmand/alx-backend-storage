@@ -3,4 +3,4 @@
 -- Requirements:
 -- Import this table dump: names.sql.zip
 -- Only the first letter of name must be indexed
-CREATE INDEX idx_name_first ON names(name);
+CREATE INDEX idx_name_first ON names(name(1));
