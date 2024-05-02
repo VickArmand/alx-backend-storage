@@ -2,7 +2,7 @@
 """This module has a class Cache"""
 import redis
 import uuid
-from typing import Union
+from typing import Union, Callable
 
 
 class Cache:
@@ -25,3 +25,31 @@ class Cache:
         self.id = str(uuid.uuid4())
         self._redis.set(self.id, data)
         return self.id
+
+    def get(self, key: str, fn: Callable) -> Union[str, bytes, int, float, None]:
+        """
+        take a key string argument and
+        an optional Callable argument named fn.
+        This callable will be used to
+        convert the data back to the desired format.
+        Remember to conserve the original Redis.get behavior
+        if the key does not exist.
+        """
+        res = self._redis.get(key)
+        if fn is not None:
+            return fn(res)
+        return res
+
+    def get_int(self, key: str) -> Union[int, None]:
+        """
+        returns the value stored in the redis store
+        at the key as an int
+        """
+        return self.get(key, int)
+
+    def get_str(self, key: str) -> Union[str, None]:
+        """
+        returns the value stored in the reds store
+        at the key as str
+        """
+        return self.get(key, str)
