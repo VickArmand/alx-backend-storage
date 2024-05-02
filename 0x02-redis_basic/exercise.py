@@ -2,7 +2,7 @@
 """This module has a class Cache"""
 import redis
 import uuid
-from typing import Union, Callable
+from typing import Union, Callable, Optional
 
 
 class Cache:
@@ -27,7 +27,7 @@ class Cache:
         return self.id
 
     def get(self, key: str,
-            fn: Union[Callable, None]) -> Union[str, bytes, int, float, None]:
+            fn: Optional[Callable] = None) -> Union[str, bytes, int, float, None]:
         """
         take a key string argument and
         an optional Callable argument named fn.
