@@ -4,15 +4,35 @@
 -- Requirements:
 -- Procedure is taking 1 input:
 -- user_id, a users.id value (you can assume user_id is linked to an existing users)
+DROP PROCEDURE IF EXISTS ComputeAverageWeightedScoreForUser;
 DELIMITER $$
-CREATE PROCEDURE ComputeAverageWeightedScoreForUser(IN user_id INT)
+CREATE PROCEDURE ComputeAverageWeightedScoreForUser (user_id INT)
 BEGIN
-    UPDATE users SET average_score = getAverageWeight(user_id) WHERE id=user_id;
-END;
-CREATE FUNCTION getAverageWeight(user_id INT)
-RETURNS INT
-BEGIN
-    SET @sum_weight = (SELECT SUM(weight) FROM projects);
-    SET @wp = (SELECT SUM(weight * score) FROM corrections c JOIN projects p ON p.id = c.project_id WHERE c.user_id = user_id);
-    RETURN (@wp / @sum_weight);
-END;$$
+    DECLARE total_weighted_score INT DEFAULT 0;
+    DECLARE total_weight INT DEFAULT 0;
+
+    SELECT SUM(corrections.score * projects.weight)
+        INTO total_weighted_score
+        FROM corrections
+            INNER JOIN projects
+                ON corrections.project_id = projects.id
+        WHERE corrections.user_id = user_id;
+
+    SELECT SUM(projects.weight)
+        INTO total_weight
+        FROM corrections
+            INNER JOIN projects
+                ON corrections.project_id = projects.id
+        WHERE corrections.user_id = user_id;
+
+    IF total_weight = 0 THEN
+        UPDATE users
+            SET users.average_score = 0
+            WHERE users.id = user_id;
+    ELSE
+        UPDATE users
+            SET users.average_score = total_weighted_score / total_weight
+            WHERE users.id = user_id;
+    END IF;
+END $$
+DELIMITER ;

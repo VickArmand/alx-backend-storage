@@ -5,58 +5,27 @@ import uuid
 from functools import wraps
 from typing import Union, Callable, Optional
 
-
-def call_history(method: Callable) -> Callable:
+def count_calls(cache_method: Callable) -> Callable:
     """
-    decorates a method to record its input output history
+    takes a single method Callable argument and
+    returns a Callable
+    As a key, use the qualified name of method
+    using the __qualname__ dunder method.
     """
-
-    @wraps(method)
-    def wrapper(self, *args, **kwargs):
-        """
-        wrapper function
-        """
-        meth_name = method.__qualname__
-        self._redis.rpush(meth_name + ":inputs", str(args))
-        output = method(self, *args, **kwargs)
-        self._redis.rpush(meth_name + ":outputs", output)
-        return output
-
+    @wraps(cache_method)
+    def wrapper(self, *args, **kwargs) -> Callable:
+        self._redis.incr(cache_method.__qualname__)
+        return cache_method(*args, **kwargs)
     return wrapper
 
-
-def replay(method: Callable) -> None:
-    """
-    displays the history of calls made by a particular method by retrieving
-    the inputs and outputs saved on the redis store
-    """
-    meth_name = method.__qualname__
-    redis_db = method.__self__._redis
-    inputs = redis_db.lrange(meth_name + ":inputs", 0, -1)
-    outputs = redis_db.lrange(meth_name + ":outputs", 0, -1)
-
-    print(f"{meth_name} was called {len(inputs)} times:")
-    for input, output in zip(inputs, outputs):
-        input = input.decode("utf-8")
-        output = output.decode("utf-8")
-        print(f"{meth_name}(*{input}) -> {output}")
-
-
-def count_calls(method: Callable) -> Callable:
-    """
-    decorates a method to count how many times it was called
-    """
-
+@count_calls
+def increment_oncall(method):
+    """"""
     @wraps(method)
     def wrapper(self, *args, **kwargs):
-        """
-        wrapper function
-        """
-        self._redis.incr(method.__qualname__)
         return method(self, *args, **kwargs)
-
     return wrapper
-
+    
 
 class Cache:
     """This class has a constructor and a store method"""
@@ -69,6 +38,8 @@ class Cache:
         self._redis = redis.Redis()
         self._redis.flushdb()
 
+    @count_calls
+    @increment_oncall
     def store(self, data: Union[str, bytes, int, float]) -> str:
         """
         takes a data argument and returns a string.
@@ -80,11 +51,12 @@ class Cache:
         return self.id
 
     def get(self, key: str,
-            fn: Optional[Callable] = None) -> Union[str,
-                                                    bytes,
-                                                    int,
-                                                    float,
-                                                    None]:
+            fn: Optional[Callable] = None) -> Union[
+                str,
+                bytes,
+                int,
+                float,
+                None]:
         """
         take a key string argument and
         an optional Callable argument named fn.
