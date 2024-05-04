@@ -6,6 +6,41 @@ from functools import wraps
 from typing import Union, Callable, Optional
 
 
+def call_history(method: Callable) -> Callable:
+    """
+    decorator to store the history of inputs
+    and outputs for a particular function.
+    Everytime the original function will be called,
+    we will add its input parameters to one list in redis,
+    and store its output into another list.
+    """
+    @wraps(method)
+    def wrapper(self, *args, **kwargs):
+        """
+        use the decorated function’s qualified name and append
+        ":inputs" and ":outputs" to create input and output list keys,
+        respectively.
+        call_history has a single parameter named method
+        that is a Callable and returns a Callable.
+        In the new function that the decorator will return,
+        use rpush to append the input arguments.
+        Remember that Redis can only store strings, bytes and numbers.
+        Therefore, we can simply use str(args) to normalize.
+        We can ignore potential kwargs for now.
+        Execute the wrapped function to retrieve the output.
+        Store the output using rpush in the "...:outputs" list,
+        then return the output.
+        Decorate Cache.store with call_history.
+        """
+        input_key = method.__qualname__ + ":inputs"
+        output_key = method.__qualname__ + ":outputs"
+        self._redis.rpush(input_key, str(args))
+        output = method(self, *args, **kwargs)
+        self._redis.rpush(output_key, output)
+        return output
+    return wrapper
+
+
 def count_calls(method: Callable) -> Callable:
     """
     takes a single method Callable argument and
@@ -16,14 +51,6 @@ def count_calls(method: Callable) -> Callable:
     @wraps(method)
     def wrapper(self, *args, **kwargs):
         self._redis.incr(method.__qualname__)
-        return method(self, *args, **kwargs)
-    return wrapper
-
-
-def increment_oncall(method: Callable) -> Callable:
-    """"""
-    @wraps(method)
-    def wrapper(self, *args, **kwargs):
         return method(self, *args, **kwargs)
     return wrapper
 
@@ -39,7 +66,7 @@ class Cache:
         self._redis = redis.Redis()
         self._redis.flushdb()
 
-    @increment_oncall
+    @call_history
     @count_calls
     def store(self, data: Union[str, bytes, int, float]) -> str:
         """
