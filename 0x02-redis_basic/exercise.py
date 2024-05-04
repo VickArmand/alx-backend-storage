@@ -14,13 +14,13 @@ def count_calls(cache_method: Callable) -> Callable:
     using the __qualname__ dunder method.
     """
     @wraps(cache_method)
-    def wrapper(self, *args, **kwargs) -> Callable:
+    def wrapper(self, *args, **kwargs):
         self._redis.incr(cache_method.__qualname__)
         return cache_method(self, *args, **kwargs)
     return wrapper
 
 
-def increment_oncall(method):
+def increment_oncall(method: Callable) -> Callable:
     """"""
     @wraps(method)
     def wrapper(self, *args, **kwargs):
