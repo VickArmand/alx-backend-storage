@@ -2,7 +2,7 @@
 """
 First restore backup into database using mongorestore dump
 """
-from pymongo import MongoClient
+from pymongo import MongoClient, DESCENDING
 
 
 if __name__ == "__main__":
@@ -29,3 +29,13 @@ if __name__ == "__main__":
             {"method": method})))
     print("{} status check".format(collection.count_documents(
         {"method": "GET", "path": "/status"})))
+    print("IPs:")
+    sorted_ips = collection.aggregate(
+        [{"$group": {"_id": "$ip", "count": {"$sum": 1}}},
+         {"$sort": {"count": -1}}])
+    i = 0
+    for s in sorted_ips:
+        if i == 10:
+            break
+        print(f"\t{s.get('_id')}: {s.get('count')}")
+        i += 1
