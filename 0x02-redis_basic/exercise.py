@@ -6,17 +6,17 @@ from functools import wraps
 from typing import Union, Callable, Optional
 
 
-def count_calls(cache_method: Callable) -> Callable:
+def count_calls(method: Callable) -> Callable:
     """
     takes a single method Callable argument and
     returns a Callable
     As a key, use the qualified name of method
     using the __qualname__ dunder method.
     """
-    @wraps(cache_method)
+    @wraps(method)
     def wrapper(self, *args, **kwargs):
-        self._redis.incr(cache_method.__qualname__)
-        return cache_method(self, *args, **kwargs)
+        self._redis.incr(method.__qualname__)
+        return method(self, *args, **kwargs)
     return wrapper
 
 
