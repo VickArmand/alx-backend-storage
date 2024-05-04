@@ -5,6 +5,7 @@ import uuid
 from functools import wraps
 from typing import Union, Callable, Optional
 
+
 def count_calls(cache_method: Callable) -> Callable:
     """
     takes a single method Callable argument and
@@ -15,17 +16,17 @@ def count_calls(cache_method: Callable) -> Callable:
     @wraps(cache_method)
     def wrapper(self, *args, **kwargs) -> Callable:
         self._redis.incr(cache_method.__qualname__)
-        return cache_method(*args, **kwargs)
+        return cache_method(self, *args, **kwargs)
     return wrapper
 
-@count_calls
+
 def increment_oncall(method):
     """"""
     @wraps(method)
     def wrapper(self, *args, **kwargs):
         return method(self, *args, **kwargs)
     return wrapper
-    
+
 
 class Cache:
     """This class has a constructor and a store method"""
@@ -38,8 +39,8 @@ class Cache:
         self._redis = redis.Redis()
         self._redis.flushdb()
 
-    @count_calls
     @increment_oncall
+    @count_calls
     def store(self, data: Union[str, bytes, int, float]) -> str:
         """
         takes a data argument and returns a string.
