@@ -6,6 +6,23 @@ from functools import wraps
 from typing import Union, Callable, Optional
 
 
+def replay(method):
+    """
+    function to display the history of calls
+    of a particular function.
+    """
+    meth_name = method.__qualname__
+    redis_db = method.__self__._redis
+    inputs = redis_db.lrange(meth_name + ":inputs", 0, -1)
+    outputs = redis_db.lrange(meth_name + ":outputs", 0, -1)
+
+    print(f"{meth_name} was called {len(inputs)} times:")
+    for input, output in zip(inputs, outputs):
+        input = input.decode("utf-8")
+        output = output.decode("utf-8")
+        print(f"{meth_name}(*{input}) -> {output}")
+
+
 def call_history(method: Callable) -> Callable:
     """
     decorator to store the history of inputs
