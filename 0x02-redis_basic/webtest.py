@@ -3,5 +3,5 @@
 Main file
 """
 from web import get_page
-
-get_page('http://slowwly.robertomurray.co.uk')
+for i in range(10):
+    get_page('http://slowwly.robertomurray.co.uk')
