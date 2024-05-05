@@ -5,6 +5,7 @@ It uses the requests module to obtain the HTML content
 of a particular URL and returns it.
 """
 import redis
+import requests as re
 from functools import wraps
 from typing import Callable
 
@@ -39,5 +40,4 @@ def get_page(url: str) -> str:
     and test your caching.
     Bonus: implement this use case with decorators.
     """
-    import requests as re
     return re.get(url).text
